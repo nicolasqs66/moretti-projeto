@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar de Ponto</title>
+    <link rel="stylesheet" href="registrar_ponto.css">
+    <style>
+        input[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; }
+        .input-group { display: flex; align-items: center; gap: 10px; }
+        .btn-buscar { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-buscar:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>Moretti</h1>
+        </div>
+
+        <div id="user-profile" class="user-profile" style="display: none;">
+            <div class="user-info">
+                <span id="user-email">...</span>
+                <span id="user-role" class="user-role">...</span> 
+            </div>
+            <button onclick="logout()" class="btn-sair">Sair</button>
+        </div>
+
+        <div id="login-area" style="display: block;">
+            <a href="login.html" class="btn-entrar">Área Administrativa</a>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Página inicial</a></li>
+            <li><a href="registrar_ponto.html">Registrar Ponto</a></li>
+            <li><a href="ponto.html">Histórico de Ponto</a></li>
+        </ul>
+    </nav>
+    
+    <div style="text-align: center;">
+        <h1>Cadastro de Ponto</h1>
+        <p>Digite sua matrícula e clique em "Buscar" para carregar seus dados:</p>
+    </div>
+    
+    <form id="formCadastro">
+        <div class="campos">
+            <label for="matricula">Matrícula (Digite e busque):</label>
+            <div class="input-group">
+                <input type="text" name="matricula" id="matricula" placeholder="Ex: 1001" required>
+                <button type="button" class="btn-buscar" onclick="buscarFuncionario()">🔍 Buscar</button>
+            </div>
+            <br>
+
+            <label for="nome">Nome Completo:</label>
+            <input type="text" name="nome" id="nome" readonly required><br>
+
+            <label for="setor">Setor:</label>
+            <input type="text" name="setor" id="setor" readonly required><br>
+
+            <label for="cargo">Cargo:</label>
+            <input type="text" name="cargo" id="cargo" readonly required><br>
+
+            <div>
+                <label for="Iplanos">Turno:</label>
+                <select name="planos" id="Iplanos">
+                    <option value="turno1">Manhã</option>
+                    <option value="turno2">Tarde</option>
+                    <option value="turno3">Noturno</option>
+                    <option value="Hora">Hora Extra</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="Imomento">Movimento:</label>
+                <select name="momento" id="Imomento">
+                    <option value="entrada">Entrada</option>
+                    <option value="saida">Saída</option>
+                </select>
+            </div>
+
+            <label for="senha">Senha:</label>
+            <input type="password" name="senha" id="senha" required><br>
+        </div>
+
+        <div style="text-align: center;">
+            <button type="submit" class="botao">Confirmar Registro</button>
+        </div>
+        
+        <p id="mensagem" style="text-align: center; font-weight: bold; margin-top: 15px;"></p>
+    </form>
+
+    <div class="carrossel">
+        <input type="radio" name="slide" id="s1" checked>
+        <input type="radio" name="slide" id="s2">
+        <div class="slides">
+            <div class="slide"><img src="IMG/img6.webp"></div>
+            <div class="slide"><img src="IMG/img1.webp"></div>
+        </div>
+        <div class="navegacao">
+            <label for="s1"></label><label for="s2"></label>
+        </div>
+    </div>
+
+    <footer class="estilo_footer">&copy; Moretti 2025. Todos os direitos reservados.</footer>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script> 
+
+    <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD2iwLAuIKuS-qkyY8dkE_ibChGh5I0CbU",
+        authDomain: "banco-projeto-d3e9b.firebaseapp.com",
+        databaseURL: "https://banco-projeto-d3e9b-default-rtdb.firebaseio.com",
+        projectId: "banco-projeto-d3e9b",
+        storageBucket: "banco-projeto-d3e9b.firebasestorage.app",
+        messagingSenderId: "500915464602",
+        appId: "1:500915464602:web:85de29461ad8d52b5af223"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // 1. PERFIL
+    auth.onAuthStateChanged((user) => {
+        const profileDiv = document.getElementById('user-profile');
+        const loginArea = document.getElementById('login-area');
+        const emailSpan = document.getElementById('user-email');
+        const roleSpan = document.getElementById('user-role');
+
+        if (user) {
+            if(profileDiv) profileDiv.style.display = 'flex';
+            if(emailSpan) emailSpan.innerText = user.email;
+            if(loginArea) loginArea.style.display = 'none';
+
+            database.ref('cargos/' + user.uid).once('value').then((snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.cargo) {
+                    roleSpan.innerText = userData.cargo;
+                } else {
+                    roleSpan.innerText = 'Colaborador';
+                }
+            });
+        } else {
+            if(profileDiv) profileDiv.style.display = 'none';
+            if(loginArea) loginArea.style.display = 'block';
+        }
+    });
+
+    function logout() {
+        auth.signOut().then(() => window.location.href = "login.html");
+    }
+
+    // 2. BUSCAR FUNCIONÁRIO (SEM CPF)
+    function buscarFuncionario() {
+        const matricula = document.getElementById('matricula').value;
+        const msg = document.getElementById('mensagem');
+
+        if(!matricula) { msg.style.color = 'red'; msg.innerText = "Por favor, digite a matrícula."; return; }
+        msg.style.color = 'blue'; msg.innerText = "Buscando dados...";
+
+        database.ref('funcionarios_dados/' + matricula).once('value').then((snapshot) => {
+            if(snapshot.exists()) {
+                const dados = snapshot.val();
+                
+                // Preenche apenas Nome, Setor e Cargo
+                document.getElementById('nome').value = dados.nome || '';
+                document.getElementById('setor').value = dados.setor || '';
+                document.getElementById('cargo').value = dados.cargo || '';
+                
+                if(dados.turno) {
+                    const selectPlanos = document.getElementById('Iplanos');
+                    for (let i = 0; i < selectPlanos.options.length; i++) {
+                        if (selectPlanos.options[i].text.includes(dados.turno)) { selectPlanos.selectedIndex = i; break; }
+                    }
+                }
+                msg.style.color = 'green'; msg.innerText = "Dados encontrados! Preencha a senha.";
+            } else {
+                msg.style.color = 'red'; msg.innerText = "Matrícula não encontrada.";
+                // Limpa campos
+                document.getElementById('nome').value = ''; 
+                document.getElementById('setor').value = ''; 
+                document.getElementById('cargo').value = '';
+            }
+        });
+    }
+
+    document.getElementById('matricula').addEventListener('blur', buscarFuncionario);
+
+    // 3. REGISTRAR PONTO (SEM CPF)
+    document.getElementById('formCadastro').addEventListener('submit',function(e) {
+        e.preventDefault(); 
+        const nome = document.getElementById('nome').value;
+        const matricula = document.getElementById('matricula').value;
+        const setor = document.getElementById('setor').value;
+        const cargo = document.getElementById('cargo').value;
+        
+        // Validação simples
+        if(!nome || !cargo) {
+            document.getElementById('mensagem').style.color = 'red';
+            document.getElementById('mensagem').innerText = 'Busque a matrícula antes de registrar.';
+            return;
+        }
+
+        const selectPlanos = document.getElementById('Iplanos');
+        const tipoTurno = selectPlanos.options[selectPlanos.selectedIndex].text;
+        const selectMomento = document.getElementById('Imomento');
+        const momento = selectMomento.options[selectMomento.selectedIndex].value; 
+        const timestamp = new Date().toISOString(); 
+        const pontoId = new Date().getTime(); 
+
+        database.ref('registros_ponto/' + pontoId).set({
+            nome: nome, 
+            matricula: matricula,
+            // cpf removido daqui também
+            setor: setor, 
+            cargo: cargo,
+            tipo: tipoTurno, 
+            momento: momento, 
+            timestamp: timestamp
+        }).then(() => {
+            document.getElementById('mensagem').style.color = 'green';
+            document.getElementById('mensagem').innerText = 'Ponto registrado com sucesso!';
+            setTimeout(() => document.getElementById('formCadastro').reset(), 2000);
+        }).catch(error => {
+            document.getElementById('mensagem').style.color = 'red';
+            document.getElementById('mensagem').innerText = 'Erro: ' + error.message;
+        });
+    });
+
+    // 4. Carrossel
+    let count = 1; 
+    setInterval(() => { 
+        count++; if (count > 2) count = 1; 
+        const el = document.getElementById('s' + count); 
+        if(el) el.checked = true; 
+    }, 3000);
+    </script>
+</body>
+</html>
