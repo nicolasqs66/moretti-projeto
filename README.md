@@ -1,2 +1,2 @@
-# moretti projeto
-Projeto de um sistema de bater ponto
+# Projeto Moretti
+Projeto de Sistema de Controle de Ponto para Funcionários da indústria, proposto em sala de aula.
